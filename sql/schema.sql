@@ -1,6 +1,6 @@
 -- writing queries to create the relational schemas of our banking-wallet database
 
-create database banking_wallet_db;
+create database if not exists banking_wallet_db; -- this helps us to avoid accidental script failure
 
 use banking_wallet_db;
 
@@ -11,7 +11,7 @@ create table users(
     phone varchar(10) not null unique,
     status varchar(10) not null,
     createdAt timestamp not null default current_timestamp
-);
+) engine = InnoDB;
 
 create table accounts(
 	accountID bigint primary key auto_increment,
@@ -33,11 +33,13 @@ create table transactionStatus(
 create table transactions(
 	transactionID bigint primary key auto_increment,
     fromAccountID bigint not null,
-    toAccountID bigint not null check (toAccountID <> fromAccountID),
+    toAccountID bigint not null,
 	amount decimal(20,2) not null check (amount>0),
-    transactionType varchar(10) not null, 
+    transactionType varchar(10) not null, -- here transaction type is always = 'TRANSFER', later we can add 'WITHDRAWAL' AND 'DEPOSIT' feature
     statusID int not null,
     createdAt timestamp not null default current_timestamp,
+    
+    check (toAccountID <> fromAccountID), -- since column level CHECK constraint is not allowed to reference another column
     
     foreign key (fromAccountID) references accounts(accountID),
     foreign key (toAccountID) references accounts(accountID),
@@ -56,10 +58,14 @@ create table ledgerEntries(
     createdAt timestamp not null default current_timestamp,
     
     foreign key (transactionID) references transactions(transactionID),
-    foreign key (accountID) references accounts(AccountID)
+    foreign key (accountID) references accounts(accountID)
 );
 
 create table auditLog(
 	logID bigint primary key auto_increment,
     entityName varchar(50) not null,
+    entityID bigint not null,
+    action varchar(50) not null,
+    performedBy bigint not null,
+    createdAt timestamp not null default current_timestamp
 );
